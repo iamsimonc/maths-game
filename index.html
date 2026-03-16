@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PokéMath Battle</title>
+
+<style>
+
+body{
+font-family:Arial, sans-serif;
+background:#f0f8ff;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+h1{
+color:#ff4444;
+}
+
+.battle-area{
+max-width:600px;
+margin:auto;
+}
+
+.pokemon{
+font-size:24px;
+margin:10px;
+}
+
+.hp-bar{
+height:20px;
+background:#ddd;
+border-radius:10px;
+overflow:hidden;
+margin:5px auto;
+width:200px;
+}
+
+.hp-fill{
+height:100%;
+background:#4CAF50;
+width:100%;
+}
+
+.question{
+font-size:28px;
+margin:30px 0;
+}
+
+.answers{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+max-width:400px;
+margin:auto;
+}
+
+button{
+padding:15px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+background:#ffd54f;
+}
+
+button:hover{
+background:#ffca28;
+}
+
+.collection{
+margin-top:40px;
+}
+
+.log{
+margin-top:20px;
+font-size:18px;
+color:#444;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>⚡ PokéMath Battle ⚡</h1>
+
+<div class="battle-area">
+
+<div class="pokemon">
+Opponent: <span id="enemyName"></span>
+<div class="hp-bar"><div id="enemyHP" class="hp-fill"></div></div>
+</div>
+
+<div class="question" id="question"></div>
+
+<div class="answers">
+<button onclick="answer(0)" id="a0"></button>
+<button onclick="answer(1)" id="a1"></button>
+<button onclick="answer(2)" id="a2"></button>
+<button onclick="answer(3)" id="a3"></button>
+</div>
+
+<div class="pokemon">
+Player HP
+<div class="hp-bar"><div id="playerHP" class="hp-fill"></div></div>
+</div>
+
+<div class="log" id="log"></div>
+
+</div>
+
+<div class="collection">
+<h2>Captured Pokémon</h2>
+<div id="collection"></div>
+</div>
+
+<script>
+
+let playerHP = 3
+let enemyHP = 3
+
+let correctAnswer = 0
+
+let enemyPokemon = [
+{name:"🐭 Pikachu"},
+{name:"🐢 Squirtle"},
+{name:"🔥 Charmander"},
+{name:"🌱 Bulbasaur"},
+{name:"🦊 Eevee"}
+]
+
+let evolutions = {
+"🔥 Charmander":"🔥 Charmeleon"
+}
+
+let collection = {}
+let wins = {}
+
+function startBattle(){
+
+playerHP = 3
+enemyHP = 3
+
+currentEnemy = enemyPokemon[Math.floor(Math.random()*enemyPokemon.length)]
+
+document.getElementById("enemyName").innerText = currentEnemy.name
+
+updateHP()
+
+generateQuestion()
+
+document.getElementById("log").innerText = "A wild "+currentEnemy.name+" appeared!"
+
+}
+
+function updateHP(){
+
+document.getElementById("playerHP").style.width = (playerHP/3*100)+"%"
+document.getElementById("enemyHP").style.width = (enemyHP/3*100)+"%"
+
+}
+
+function generateQuestion(){
+
+let a = Math.floor(Math.random()*11)
+let b = Math.floor(Math.random()*11)
+
+let type = Math.random()<0.5 ? "add":"sub"
+
+let result
+
+if(type==="add"){
+result = a + b
+}else{
+result = a - b
+if(result < 0){
+[a,b] = [b,a]
+result = a-b
+}
+}
+
+document.getElementById("question").innerText = a + (type==="add"?" + ":" - ") + b + " = ?"
+
+correctAnswer = result
+
+let answers = new Set()
+answers.add(result)
+
+while(answers.size < 4){
+
+let fake = result + Math.floor(Math.random()*5)-2
+
+if(fake>=0 && fake<=20){
+answers.add(fake)
+}
+
+}
+
+answers = Array.from(answers)
+
+shuffle(answers)
+
+answers.forEach((v,i)=>{
+document.getElementById("a"+i).innerText = v
+})
+
+correctIndex = answers.indexOf(result)
+
+}
+
+function answer(i){
+
+if(i===correctIndex){
+
+enemyHP--
+
+document.getElementById("log").innerText = "Correct! Your Pokémon attacks!"
+
+}else{
+
+playerHP--
+
+document.getElementById("log").innerText = "Wrong! Enemy attacks!"
+
+}
+
+updateHP()
+
+if(enemyHP===0){
+
+winBattle()
+return
+
+}
+
+if(playerHP===0){
+
+loseBattle()
+return
+
+}
+
+generateQuestion()
+
+}
+
+function winBattle(){
+
+document.getElementById("log").innerText = "You defeated "+currentEnemy.name+"!"
+
+capture(currentEnemy.name)
+
+setTimeout(startBattle,1500)
+
+}
+
+function loseBattle(){
+
+document.getElementById("log").innerText = "You fainted! Try again!"
+
+setTimeout(startBattle,1500)
+
+}
+
+function capture(name){
+
+if(!collection[name]){
+collection[name]=1
+wins[name]=0
+}else{
+collection[name]++
+}
+
+wins[name]++
+
+if(evolutions[name] && wins[name]>=2){
+
+let evolved = evolutions[name]
+
+collection[evolved] = 1
+
+delete collection[name]
+
+document.getElementById("log").innerText += " It evolved into "+evolved+"!"
+
+}
+
+updateCollection()
+
+}
+
+function updateCollection(){
+
+let text=""
+
+for(let p in collection){
+text += p+" x"+collection[p]+"<br>"
+}
+
+document.getElementById("collection").innerHTML = text
+
+}
+
+function shuffle(array){
+
+for(let i=array.length-1;i>0;i--){
+
+let j=Math.floor(Math.random()*(i+1))
+
+[array[i],array[j]]=[array[j],array[i]]
+
+}
+
+}
+
+startBattle()
+
+</script>
+
+</body>
+</html>
